@@ -8,6 +8,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -17,6 +18,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
@@ -38,6 +41,32 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     // 再生中フラグ
     boolean isPlaying = false;
+
+    // タイマ関連
+    MyTimerTask timerTask = null;
+    Timer mTimer   = null;
+    Handler mHandler = new Handler();
+    class MyTimerTask extends TimerTask {
+
+        @Override
+        public void run() {
+            // mHandlerを通じてUI Threadへ処理をキューイング
+            mHandler.post( new Runnable() {
+                public void run() {
+
+                    //実行間隔分を加算処理
+                    mLaptime +=  0.1d;
+
+                    //計算にゆらぎがあるので小数点第1位で丸める
+                    BigDecimal bi = new BigDecimal(mLaptime);
+                    float outputValue = bi.setScale(1, BigDecimal.ROUND_HALF_UP).floatValue();
+
+                    //現在のLapTime
+                    mTextView.setText(Float.toString(outputValue));
+                }
+            });
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -110,7 +139,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // 最初の画像を表示する
         ImageView imageVIew = (ImageView) findViewById(R.id.imageView);
         imageVIew.setImageURI(imageUriList.get(curImgId));
-        textView.setText((curImgId + 1) + "/" + numImg);
+        textView.setText("画像：" + (curImgId + 1) + "/" + numImg);
     }
 
     @Override
@@ -126,7 +155,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             ImageView imageVIew = (ImageView) findViewById(R.id.imageView);
             imageVIew.setImageURI(imageUriList.get(curImgId));
-            textView.setText((curImgId + 1) + "/" + numImg);
+            textView.setText("画像：" + (curImgId + 1) + "/" + numImg);
         }
         else if (v.getId() == R.id.button2)
         {
@@ -139,20 +168,47 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             ImageView imageVIew = (ImageView) findViewById(R.id.imageView);
             imageVIew.setImageURI(imageUriList.get(curImgId));
-            textView.setText((curImgId + 1) + "/" + numImg);
+            textView.setText("画像：" + (curImgId + 1) + "/" + numImg);
         }
         else if (v.getId() == R.id.button3)
         {
             // 再生/停止
             if(isPlaying == false)
             {
+                // 再生
+                if(mTimer == null){
+
+                    //タイマーの初期化処理
+                    timerTask = new MyTimerTask();
+                    mLaptime = 0.0f;
+                    mTimer = new Timer(true);
+                    mTimer.schedule( timerTask, 100, 100);
+                }
+                break;
+
                 isPlaying = true;
                 button3.setText("再生");
+
+                //ボタンタップ不可
+                button1.setEnabled(false);
+                button2.setEnabled(false);
             }
             else
             {
+                // 停止
+                if(mTimer != null){
+                    mTimer.cancel();
+                    mTimer = null;
+                }
+
                 isPlaying = false;
                 button3.setText("停止");
+
+
+
+                //ボタンタップ可
+                button1.setEnabled(true);
+                button2.setEnabled(true);
             }
         }
     }
