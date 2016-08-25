@@ -173,7 +173,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     //タイマーの初期化処理
                     timerTask = new MyTimerTask();
                     mTimer = new Timer(true);
-                    mTimer.schedule(timerTask, 0, 2000);
+                    mTimer.schedule(timerTask, 2000, 2000);
                 }
 
                 isPlaying = true;
