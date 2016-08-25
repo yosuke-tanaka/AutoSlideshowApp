@@ -3,6 +3,7 @@ package com.example.yt_home.autoslideshowapp;
 import android.Manifest;
 import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
@@ -16,6 +17,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.support.v7.app.AlertDialog;
 
 import java.util.ArrayList;
 import java.util.Timer;
@@ -25,12 +27,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private static final int PERMISSIONS_REQUEST_CODE = 100;
 
+    // コンポーネント
     TextView textView;
     Button button1;
     Button button2;
     Button button3;
 
-    // 画像一覧
+    // 画像URL一覧
     ArrayList<Uri> imageUriList = new ArrayList<>();
 
     // 現在表示中の画像ID (0起算)
@@ -54,20 +57,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             mHandler.post( new Runnable() {
                 public void run() {
 
-                    //実行間隔分を加算処理
-                    mLaptime +=  0.1d;
-
-                    //計算にゆらぎがあるので小数点第1位で丸める
-                    BigDecimal bi = new BigDecimal(mLaptime);
-                    float outputValue = bi.setScale(1, BigDecimal.ROUND_HALF_UP).floatValue();
-
-                    //現在のLapTime
-                    mTextView.setText(Float.toString(outputValue));
+                    //次の画像を表示
+                    StepAndShowImg(+1);
                 }
             });
         }
     }
 
+    // メインアクティビティ
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -110,6 +107,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    // 画像URL一覧取得
     private void getContentsInfo() {
 
         // 画像の情報を取得する
@@ -136,39 +134,34 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         cursor.close();
 
+        if(numImg == 0)
+        {
+            showAlertDialog("画像がありません");
+            //ボタンタップ不可
+            button1.setEnabled(false);
+            button2.setEnabled(false);
+            button3.setEnabled(false);
+            return;
+        }
+
         // 最初の画像を表示する
         ImageView imageVIew = (ImageView) findViewById(R.id.imageView);
         imageVIew.setImageURI(imageUriList.get(curImgId));
         textView.setText("画像：" + (curImgId + 1) + "/" + numImg);
     }
 
+    // ボタンクリック時の処理
     @Override
     public void onClick(View v) {
         if (v.getId() == R.id.button1)
         {
             // 次へ
-            curImgId++;
-            if(curImgId == numImg)
-            {
-                curImgId = 0;
-            }
-
-            ImageView imageVIew = (ImageView) findViewById(R.id.imageView);
-            imageVIew.setImageURI(imageUriList.get(curImgId));
-            textView.setText("画像：" + (curImgId + 1) + "/" + numImg);
+            StepAndShowImg(+1);
         }
         else if (v.getId() == R.id.button2)
         {
             // 戻る
-            curImgId--;
-            if(curImgId < 0)
-            {
-                curImgId = numImg - 1;
-            }
-
-            ImageView imageVIew = (ImageView) findViewById(R.id.imageView);
-            imageVIew.setImageURI(imageUriList.get(curImgId));
-            textView.setText("画像：" + (curImgId + 1) + "/" + numImg);
+            StepAndShowImg(-1);
         }
         else if (v.getId() == R.id.button3)
         {
@@ -177,17 +170,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             {
                 // 再生
                 if(mTimer == null){
-
                     //タイマーの初期化処理
                     timerTask = new MyTimerTask();
-                    mLaptime = 0.0f;
                     mTimer = new Timer(true);
-                    mTimer.schedule( timerTask, 100, 100);
+                    mTimer.schedule(timerTask, 0, 2000);
                 }
-                break;
 
                 isPlaying = true;
-                button3.setText("再生");
+                button3.setText("停止");
 
                 //ボタンタップ不可
                 button1.setEnabled(false);
@@ -202,14 +192,51 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
 
                 isPlaying = false;
-                button3.setText("停止");
-
-
+                button3.setText("再生");
 
                 //ボタンタップ可
                 button1.setEnabled(true);
                 button2.setEnabled(true);
             }
         }
+    }
+
+    // step分画像を進め、その画像を表示する
+    private void StepAndShowImg(int step)
+    {
+        curImgId += step;
+        if(curImgId >= numImg)
+        {
+            curImgId = 0;
+        }
+        else if(curImgId < 0)
+        {
+            curImgId = numImg - 1;
+        }
+
+        ImageView imageVIew = (ImageView) findViewById(R.id.imageView);
+        imageVIew.setImageURI(imageUriList.get(curImgId));
+        textView.setText("画像：" + (curImgId + 1) + "/" + numImg);
+    }
+
+    // エラーダイアログ
+    private void showAlertDialog(String msg) {
+        // AlertDialog.Builderクラスを使ってAlertDialogの準備をする
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        alertDialogBuilder.setTitle("エラー");
+        alertDialogBuilder.setMessage(msg);
+
+        // OKボタンに表示される文字列、押したときのリスナーを設定する
+        alertDialogBuilder.setPositiveButton("OK",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        Log.d("UI_PARTS", "OKボタン");
+                    }
+                });
+
+        // AlertDialogを作成して表示する
+        AlertDialog alertDialog = alertDialogBuilder.create();
+        alertDialog.show();
     }
 }
