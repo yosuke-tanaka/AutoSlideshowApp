@@ -99,10 +99,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (requestCode) {
             case PERMISSIONS_REQUEST_CODE:
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // 許可されている
                     getContentsInfo();
+                }
+                else
+                {
+                    // 許可されていません
+                    ErrorCommon("Permission不許可");
+                    return;
                 }
                 break;
             default:
+                ErrorCommon("Error");
                 break;
         }
     }
@@ -136,11 +144,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         if(numImg == 0)
         {
-            showAlertDialog("画像がありません");
-            //ボタンタップ不可
-            button1.setEnabled(false);
-            button2.setEnabled(false);
-            button3.setEnabled(false);
+            ErrorCommon("画像がありません");
             return;
         }
 
@@ -217,6 +221,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         ImageView imageVIew = (ImageView) findViewById(R.id.imageView);
         imageVIew.setImageURI(imageUriList.get(curImgId));
         textView.setText("画像：" + (curImgId + 1) + "/" + numImg);
+    }
+
+
+    // エラー共通処理
+    private void ErrorCommon(String msg) {
+        // エラーダイアログ表示
+        showAlertDialog(msg);
+        //ボタンタップ不可
+        button1.setEnabled(false);
+        button2.setEnabled(false);
+        button3.setEnabled(false);
     }
 
     // エラーダイアログ
